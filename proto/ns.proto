@@ -1,0 +1,8 @@
+package llql_proto;
+option java_package = "com.vitessedata.llql.llql_proto";
+option java_outer_classname = "LLQLNs";
+
+enum Namespace {
+	LLQL = 0;
+	Postgres = 1;
+}

@@ -1,0 +1,100 @@
+package llql_proto;
+option java_package = "com.vitessedata.llql.llql_proto";
+option java_outer_classname = "LLQLQuark";
+
+import "err.proto";
+import "query.proto";
+
+enum Magic {
+    LLQL_MAGIC = 299792458;
+    LLQL_VERSION = 1; 
+}
+
+enum MessageType {
+    MSG_TEST                = 0; 
+    MSG_ADMIN_CMD           = 1; 
+    MSG_QUARK_CMD           = 2;
+    MSG_LLQL_CMD            = 3;
+    MSG_DATA                = 4;
+    MSG_QUERY_EXEC          = 5;
+    MSG_ERROR               = 6;
+}
+
+message ColData {
+    repeated bool   isnull = 1;
+    repeated bool   boolval = 2;
+    repeated int32  i32val = 3;
+    repeated int64  i64val = 4;
+    repeated float  floatval = 5;
+    repeated double doubleval = 6;
+    repeated string strval = 7;
+    repeated bytes bytesval = 8;
+}
+
+message RelData {
+    required bool last      = 1;
+    required int32 ntuple   = 2;
+    required int32 ncol     = 3;
+    repeated ColData cols   = 4;
+}
+
+message QueryPartition {
+    required string query_id        = 1;
+    required int32  stage_id        = 2;
+    required int32  partition       = 3;
+    required int32  total_partition = 4;
+}
+
+message QuarkCmd {
+    enum CmdType {
+        RETURN          = 0;
+        REGISTER_QUERY  = 1;
+        EXECUTE_QUERY   = 2;
+        STOP_QUERY      = 3;
+    }
+
+    required CmdType ct     = 1;
+    optional Error   err    = 2;
+    optional string  query_id = 3;
+    optional bytes   query  = 4;
+    optional QueryPartition query_partition = 5;
+    optional RelData query_result = 6;
+}
+
+message HostInfo {
+    required int32 host_id        = 1;
+    required int32 host_gen       = 2;
+    required string hostname      = 3;
+    required int32 listen_port    = 4; 
+}
+
+message LLQLCmd {
+    enum CmdType {
+        RETURN                  = 0;
+        START_HOST              = 1;
+        START_PARTITION         = 2;
+        CONNECT_PEER            = 3;
+        CONNECT_PEER_ACK        = 4;
+        EXEC_PARTITION          = 5;
+    }
+
+    required CmdType ct         = 1;
+    optional Error  err         = 2;
+    repeated HostInfo host_info = 3;
+    optional QueryPartition query_partition = 4;
+    optional bytes query_string  = 5;
+    optional RelData query_result = 6;
+}
+
+
+message AdminCmd {
+    enum CmdType {
+        RETURN      = 0;
+        SHOW_CONF   = 1;
+        SHOW_SLAVES = 2;
+        SHOW_PEERS  = 3;
+    }
+    required CmdType ct     = 1;
+    optional Error err      = 2;
+    optional RelData result = 3;
+}

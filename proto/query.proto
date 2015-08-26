@@ -1,0 +1,142 @@
+package llql_proto;
+option java_package = "com.vitessedata.llql.llql_proto";
+option java_outer_classname = "LLQLQuery";
+
+import "data.proto";
+import "expr.proto";
+
+enum JoinType {
+    INNER           = 0;
+    LEFT_OUTER      = 1;
+    RIGHT_OUTER     = 2;
+    FULL_OUTER      = 3;
+    LEFT_SEMI       = 4;
+}
+
+message Distinct {
+    required bool is_partial = 1;
+}
+
+message Exchange {
+    enum ExchangeType {
+        BROADCAST = 0;
+        HASH    = 1;
+        RANGE   = 2;
+    }
+
+    required ExchangeType x_type    = 1;
+    required int32  x_part        = 2;
+    repeated Expr x_exprs        = 3;
+    repeated SortExpr x_sortexprs        = 4;
+}
+
+message ExtScan {
+	enum DSType {
+		CSV		= 0;
+		PG_TEXT	= 1;
+        PARQUET = 2;
+	}
+	required DSType ds_type = 1;
+	repeated string urls    = 2;
+    required Schema cols    = 3;
+}
+
+message Filter {
+    required Expr predicate     = 1;
+}
+
+message Generator {
+    repeated Expr expand_array  = 1;
+    optional Expr gen_function  = 2;
+}
+
+message HashAgg {
+    required bool is_partial    = 1;
+    required bool is_top        = 2;
+    repeated Expr grp_exprs     = 3;
+    repeated Expr proj_exprs    = 4;
+}
+
+message HashJoin {
+    repeated Expr left_keys     = 1;
+    repeated Expr right_keys    = 2;
+    required int32 build_side     = 3;
+    required JoinType join_type = 4;
+    optional Expr extra_predicate    = 5;
+    required bool broadcast = 6; 
+}
+
+message Limit {
+    required int64 limit = 1;
+    required int64 offset = 2;
+}
+
+message NestedLoopJoin {
+    required int32 build_side     = 1;
+    required JoinType join_type = 2;
+    optional Expr predicate    = 3;
+    required bool broadcast = 4; 
+}
+
+message Project {
+    repeated Expr exprs     = 1;
+}
+
+message Sample {
+    required double fraction  = 1;
+    required bool with_replacement = 2;
+    required int64 seed = 3; 
+}
+
+message SetOp {
+    enum SetOpType {
+        UNION       = 0;
+        UNION_ALL   = 1;
+        INTERSECT   = 2;
+        EXCEPT      = 3;
+    }
+    required SetOpType setop_type = 1;
+}
+        
+message Sort {
+    repeated SortExpr sort_exprs = 1;
+}
+
+message SortLimit {
+    repeated SortExpr sort_exprs = 1;
+    required int64 limit = 2;
+    required int64 offset = 3;
+}
+
+message Emit {
+    required int64 limit = 1;
+    required int64 offset = 2;
+    required int64 sample_rate = 3;
+}
+
+message Relation {
+	required int32 rel_id       = 1;
+	optional string rel_name    = 2;
+	required Schema schema      = 3;
+    repeated int32 children     = 4;
+    optional Distinct distinct  = 5;
+    optional Exchange exchange  = 6;
+    optional ExtScan extscan    = 7;
+    optional Filter  filter     = 8;
+    optional Generator generator = 9;
+    optional HashAgg hashagg    = 10;
+    optional HashJoin hashjoin = 11;
+    optional Limit  limit = 12;
+    optional NestedLoopJoin nestedloopjoin = 13;
+    optional Project project = 14;
+    optional Sample sample = 15;
+    optional SetOp setop = 16;
+    optional Sort sort = 17;
+    optional SortLimit sortlimit = 18;
+    optional Emit emit = 19;
+}
+
+message Query {
+	required int32 root         = 1;
+	repeated Relation rels      = 2;
+}

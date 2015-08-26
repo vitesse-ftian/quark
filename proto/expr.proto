@@ -1,0 +1,123 @@
+package llql_proto;
+
+import "ns.proto";
+import "data.proto";
+
+option java_package = "com.vitessedata.llql.llql_proto";
+option java_outer_classname = "LLQLExpr";
+
+message Expr {
+	message Const {
+		required bool is_null = 1;
+        required string str_val = 2;
+	}
+
+	message ColRef {
+		required int32 rel_id = 1;
+		required int32 col_id = 2;
+	}
+
+	message Func {
+        enum BuiltIn {
+            /* Group 1: basic arithmatics */
+            FUNC_ADD        = 1; 
+            FUNC_SUBTRACT   = 2; 
+            FUNC_UMINUS     = 3;
+            FUNC_MULTIPLY   = 4;
+            FUNC_DIVIDE     = 5;
+            FUNC_REMAINDER  = 6;
+            FUNC_BIT_AND    = 7;
+            FUNC_BIT_OR     = 8;
+            FUNC_BIT_XOR    = 9;
+            FUNC_BIT_NOT    = 10;
+
+            /* Group 2: compares */
+            FUNC_COMPARE    = 200;
+            FUNC_AND        = 201;
+            FUNC_OR         = 202;
+            FUNC_NOT        = 203;
+            FUNC_EQ         = 204;
+            FUNC_LT         = 205;
+            FUNC_LE         = 206;
+            FUNC_GT         = 207;
+            FUNC_GE         = 208;
+            FUNC_NE         = 209;
+
+            /* Group 3: strings */
+            FUNC_REGEXP_MATCH   = 300;
+            FUNC_LIKE           = 301;
+            FUNC_LOWER          = 302;
+            FUNC_UPPER          = 303;
+            FUNC_STR_COMPARE    = 304;
+            FUNC_STR_CONTAINS   = 305;
+            FUNC_START_WITH     = 306;
+            FUNC_END_WITH       = 307;
+            FUNC_SUBSTRING      = 308;
+
+            /* Group 4: math functions */
+            FUNC_ABS        = 400;
+            FUNC_SQRT       = 401; 
+
+            /* Group 5: cast, null test related */
+            FUNC_CAST       = 500;
+            FUNC_COALESCE   = 501; 
+            FUNC_ISNULL     = 502;
+            FUNC_ISNOTNULL  = 503;
+            FUNC_MIN        = 504;
+            FUNC_MAX        = 505;
+            FUNC_IN         = 506;
+            FUNC_IF         = 507;
+            FUNC_CASE       = 508;
+
+            /* Group 900: array */
+            FUNC_EMPTY_ARRAY    = 90000;
+            FUNC_ARRAY_INDEX    = 90001;
+
+            /* Group 901: set */
+            FUNC_EMPTY_SET      = 90100;
+            FUNC_ADD_TO_SET     = 90101;
+            FUNC_UNION          = 90102;
+            FUNC_COUNT          = 90103;
+
+            /* Group 999: generators */
+            FUNC_GEN_EXPRS          = 99900;
+            FUNC_GEN_UNNEST         = 99901;
+
+            /* Agg group 1: Basic count aggs. */
+            AGG_COUNT       = 1000001;
+            AGG_SUM         = 1000002;
+            AGG_MIN         = 1000003;
+            AGG_MAX         = 1000004;
+            AGG_AVG         = 1000005;
+            AGG_FIRST       = 1000006;
+            AGG_LAST        = 1000007;
+            
+            /* Agg group 900: Approximations */
+            AGG_APPROXIMATE_COUNT = 1090001;
+
+            /* Agg group 999: Set */
+            AGG_COLLECT_SET = 1099901;
+            AGG_UNION       = 1099902;
+            AGG_UNION_AND_COUNT = 1099903;
+        }
+
+        required Namespace ns  = 1;
+        required int32 func_id = 2;
+        required bool is_volatile = 3 [default = false];
+        required bool is_strict = 4 [default = true];
+        required bool is_distinct = 5 [default = false];
+        repeated Expr args = 6;
+	}
+
+	required DataType dt = 1;
+	optional Const const_val = 2;
+	optional ColRef colref = 3;
+	optional Func func = 4;
+}
+
+message SortExpr {
+    required Expr expr = 1;
+    required bool desc = 2; 
+    required bool null_first = 3;
+}
+
