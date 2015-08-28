@@ -8,30 +8,32 @@ import org.apache.spark.sql.types._
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
 
-class Tpch(val sc: SparkContext, val vc: VitesseContext) extends Logging {
+class Tpch(val sc: SparkContext, val vc: VitesseContext, val scale: String) extends Logging {
+  def parquetfn(tbl :String) = "file:///nx/tpch-" + scale + "/parquet/" + tbl
+
   def prepareParquetTables(): Unit = {
-    val nation = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/nation")
+    val nation = vc.vitesseRead.parquet(parquetfn("nation"))
     nation.registerTempTable("nation")
 
-    val region = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/region")
+    val region = vc.vitesseRead.parquet(parquetfn("region"))
     region.registerTempTable("region")
 
-    val part = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/part")
+    val part = vc.vitesseRead.parquet(parquetfn("part"))
     part.registerTempTable("part")
 
-    val supplier = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/supplier")
+    val supplier = vc.vitesseRead.parquet(parquetfn("supplier"))
     supplier.registerTempTable("supplier")
 
-    val partsupp = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/partsupp")
+    val partsupp = vc.vitesseRead.parquet(parquetfn("partsupp"))
     partsupp.registerTempTable("partsupp")
 
-    val customer = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/customer")
+    val customer = vc.vitesseRead.parquet(parquetfn("customer"))
     customer.registerTempTable("customer")
 
-    val orders = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/orders")
+    val orders = vc.vitesseRead.parquet(parquetfn("orders"))
     orders.registerTempTable("orders")
 
-    val lineitem = vc.vitesseRead.parquet("file:///nx/tpch1/parquet/lineitem")
+    val lineitem = vc.vitesseRead.parquet(parquetfn("lineitem"))
     lineitem.registerTempTable("lineitem")
   }
 
@@ -628,7 +630,9 @@ object Tpch extends Logging {
     Logger.getLogger("akka").setLevel(Level.OFF)
 
     val sparkConf = new SparkConf().setAppName("Vitesse-Tpch")
-    val flavor = args(0)
+
+    val scale = args(0)
+    val flavor = args(1)
     logWarning(s"Vitesse: ============== VITESSE USING $flavor CONTEXT ====================== ")
 
     if (flavor.equals("sql")) {
@@ -640,11 +644,11 @@ object Tpch extends Logging {
 
     val sc = new SparkContext(sparkConf)
     val vc = new VitesseContext(sc)
-    val tpch = new Tpch(sc, vc)
+    val tpch = new Tpch(sc, vc, scale)
 
     tpch.prepareParquetTables()
 
-    args(1) match {
+    args(2) match {
       case "q1" => tpch.run_q1()
       case "q2" => tpch.run_q2()
       case "q3" => tpch.run_q3()
@@ -674,7 +678,11 @@ object Tpch extends Logging {
   }
 }
 
-class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
+class TpchLoad(val sc: SparkContext, val vc: VitesseContext, val scale: String) {
+
+  def tblfn(tblname: String) :String = "file:///nx/tpch-" + scale + "/load/data/" + tblname + ".tbl"
+  def parquetfn(tblname: String) :String = "file:///nx/tpch-" + scale + "/parquet/" + tblname
+
   def loadNation(): Unit = {
     val schema = StructType(
       List(StructField("n_nationkey", IntegerType, false),
@@ -683,12 +691,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("n_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/nation.tbl")
+    val tbl = sc.textFile(tblfn("nation"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1), p(2).toInt, p(3)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/nation")
+    df.write.parquet(parquetfn("nation"))
   }
 
   def loadRegion(): Unit = {
@@ -698,12 +706,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("r_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/region.tbl")
+    val tbl = sc.textFile(tblfn("region"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1), p(2)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/region")
+    df.write.parquet(parquetfn("region"))
   }
 
   def loadPart(): Unit = {
@@ -719,12 +727,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("p_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/part.tbl")
+    val tbl = sc.textFile(tblfn("part"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1), p(2), p(3), p(4), p(5).toInt, p(6), p(7).toFloat, p(8)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/part")
+    df.write.parquet(parquetfn("part"))
   }
 
   def loadSupplier(): Unit = {
@@ -738,12 +746,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("s_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/supplier.tbl")
+    val tbl = sc.textFile(tblfn("supplier"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1), p(2), p(3).toInt, p(4), p(5).toFloat, p(6)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/supplier")
+    df.write.parquet(parquetfn("supplier"))
   }
 
   def loadPartSupp(): Unit = {
@@ -755,12 +763,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("ps_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/partsupp.tbl")
+    val tbl = sc.textFile(tblfn("partsupp"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1).toInt, p(2).toInt, p(3).toFloat, p(4)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/partsupp")
+    df.write.parquet(parquetfn("partsupp"))
   }
 
   def loadCustomer(): Unit = {
@@ -775,12 +783,12 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("c_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/customer.tbl")
+    val tbl = sc.textFile(tblfn("customer"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1), p(2), p(3).toInt, p(4), p(5).toFloat, p(6), p(7)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/customer")
+    df.write.parquet(parquetfn("customer"))
   }
 
   // orderdate: Parquet does not support DateType yet.  Use string.
@@ -797,13 +805,13 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("o_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/orders.tbl")
+    val tbl = sc.textFile(tblfn("orders"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1).toInt, p(2), p(3).toFloat, java.sql.Date.valueOf(p(4)),
                     p(5), p(6), p(7).toInt, p(8)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/orders")
+    df.write.parquet(parquetfn("orders"))
   }
 
   // date: Parquet does not support DateType yet.  Use string.
@@ -827,7 +835,7 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
         StructField("l_comment", StringType))
     )
 
-    val tbl = sc.textFile("file:///nx/tpch1/load/data/lineitem.tbl")
+    val tbl = sc.textFile(tblfn("lineitem"))
       .map(_.split("[|]"))
       .map(p => Row(p(0).toInt, p(1).toInt, p(2).toInt, p(3).toInt, p(4).toInt,
                     p(5).toFloat, p(6).toFloat, p(7).toFloat, p(8), p(9),
@@ -835,7 +843,7 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
                     p(13), p(14), p(15)))
 
     val df = vc.createDataFrame(tbl, schema)
-    df.write.parquet("file:///nx/tpch1/parquet/lineitem")
+    df.write.parquet(parquetfn("lineitem"))
   }
 
   def loadTextTables(): Unit = {
@@ -852,12 +860,13 @@ class TpchLoad(val sc: SparkContext, val vc: VitesseContext) {
 
 object TpchLoad {
   def main(args: Array[String]): Unit = {
+    val scale = args(0)
     val sparkConf = new SparkConf().setAppName("Vitesse-Tpch")
     sparkConf.set("spark.sql.parquet.compression.codec", "uncompressed")
     val sc = new SparkContext(sparkConf)
 
     val vitesseContext = new VitesseContext(sc)
-    val tpch = new TpchLoad(sc, vitesseContext)
+    val tpch = new TpchLoad(sc, vitesseContext, scale)
     tpch.loadTextTables()
   }
 }
